@@ -84,7 +84,7 @@ int main() {
   else if (strncmp(path_info, "/answer", 4) == 0)
     service_type = ANSWER;
   else {
-    printf("<p>The operation is not supported.</p>\n");
+    printf("<p>No such service.</p>\n");
     return 0;
   }
 
@@ -92,8 +92,10 @@ int main() {
   pipe_tolisp = fopen(tolisp, "w");
   if (pipe_tolisp == NULL) exit(EXIT_FAILURE);
   len = fwrite(path_info, 1, strlen(path_info), pipe_tolisp);
-  if (service_type == ANSWER) fputs("&", pipe_tolisp);
-  len = fwrite(query_string, 1, strlen(query_string), pipe_tolisp);
+  if (service_type == ANSWER) {
+    fputs("&", pipe_tolisp); 
+    len = fwrite(query_string, 1, strlen(query_string), pipe_tolisp);
+  }
   fputs("\n", pipe_tolisp);
   fclose(pipe_tolisp);
 
@@ -109,10 +111,10 @@ int main() {
   if(!tokens) return 1;
   switch (service_type) {
   case QUESTION: /* the form's method could be ANSWER but this limits the 
-               of supported web browsers */
-    printf("<form action=\"/cgi-bin/a.out/put\" method=\"get\">\n"
+                    number of supported web browsers */
+    printf("<form action=\"/cgi-bin/a.out/answer\" method=\"get\">\n"
            "<p>%s</p>\n"
-           "<input type=\"text\" name=\"answer\">\n"
+           "<input type=\"text\" name=\"guess\">\n"
            "<input type=\"hidden\" name=\"ix\" value=\"%d\">\n"
            "<input type=\"submit\">\n"
            "</form>\n",
@@ -120,11 +122,10 @@ int main() {
            atoi(*(tokens + 1)));
     break;
   case ANSWER:
-    { //ix, answer, correct
-      int ix = atoi(*(tokens + 0));
-      int answer = atoi(*(tokens + 1));
+    { //id, guess, correct
+      int guess = atoi(*(tokens + 1));
       int correct = atoi(*(tokens + 2));
-      printf(answer==correct ? "<p>Correct!</p>\n": "<p>Incorrect!</p>\n");
+      printf(guess==correct ? "<p>Correct!</p>\n": "<p>Incorrect!</p>\n");
       printf("<br>\n"
              "<a href=\"/cgi-bin/a.out/question\">Try again</>\n");
     }
@@ -133,11 +134,6 @@ int main() {
     free(*(tokens + i));
   free(tokens);
   free(line);
-
-  /* mkfifo(tolisp, 0640); */
-  /* mkfifo(fromlisp, 0640); */
-  /* unlink(tolisp); */
-  /* unlink(fromlisp); */
 
   printf(
          "<address>\n"
